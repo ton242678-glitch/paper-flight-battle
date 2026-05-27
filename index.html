@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>纸飞机大战</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-shell" aria-label="纸飞机大战">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <h1>纸飞机大战</h1>
+        </div>
+
+        <section class="scoreboard" aria-label="游戏状态">
+          <div class="stat">
+            <span class="stat-label">分数</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">关卡</span>
+            <strong id="level">1/5</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">时间</span>
+            <strong id="timer">--</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">生命</span>
+            <strong id="lives">3</strong>
+          </div>
+          <div class="stat stage-stat">
+            <span class="stat-label">阶段</span>
+            <strong id="stage">准备</strong>
+          </div>
+        </section>
+
+        <nav class="controls" aria-label="游戏控制">
+          <button id="modeButton" type="button">模式 关卡</button>
+          <button id="levelSelectButton" type="button" disabled>选关 锁定</button>
+          <button id="startButton" type="button">开始</button>
+          <button id="soundButton" type="button" aria-pressed="true">声音 开</button>
+        </nav>
+      </header>
+
+      <section class="arena" aria-label="游戏区域">
+        <div class="boss-meter" id="bossMeter" aria-hidden="true">
+          <span id="bossName">Boss</span>
+          <div class="boss-track">
+            <i id="bossFill"></i>
+          </div>
+        </div>
+
+        <canvas id="gameCanvas" width="960" height="620" aria-label="纸飞机大战画布"></canvas>
+
+        <div class="level-select" id="levelSelect" aria-hidden="true">
+          <div class="level-select-panel">
+            <p class="overlay-kicker">Level Select</p>
+            <h2>选择关卡</h2>
+            <div class="level-grid" aria-label="关卡列表">
+              <button class="level-choice" type="button" data-level="0">
+                <span>第 1 关</span>
+                <small>草稿纸航线</small>
+              </button>
+              <button class="level-choice" type="button" data-level="1">
+                <span>第 2 关</span>
+                <small>蓝格本乱流</small>
+              </button>
+              <button class="level-choice" type="button" data-level="2">
+                <span>第 3 关</span>
+                <small>订书钉防线</small>
+              </button>
+              <button class="level-choice" type="button" data-level="3">
+                <span>第 4 关</span>
+                <small>折纸激光塔</small>
+              </button>
+              <button class="level-choice is-final" type="button" data-level="4">
+                <span>第 5 关</span>
+                <small>期末试卷风暴</small>
+              </button>
+            </div>
+            <button id="levelSelectClose" class="level-close" type="button">返回</button>
+          </div>
+        </div>
+
+        <div class="overlay is-visible" id="overlay">
+          <p class="overlay-kicker" id="overlayKicker">Paper Flight</p>
+          <h2 id="overlayTitle">纸飞机大战</h2>
+          <p id="overlayText">准备起飞</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
