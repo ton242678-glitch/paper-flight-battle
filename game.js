@@ -8,7 +8,9 @@
   const stageEl = document.getElementById("stage");
   const modeButton = document.getElementById("modeButton");
   const levelSelectButton = document.getElementById("levelSelectButton");
+  const adminButton = document.getElementById("adminButton");
   const startButton = document.getElementById("startButton");
+  const pauseButton = document.getElementById("pauseButton");
   const soundButton = document.getElementById("soundButton");
   const levelSelect = document.getElementById("levelSelect");
   const levelSelectClose = document.getElementById("levelSelectClose");
@@ -35,6 +37,7 @@
 
   const state = {
     running: false,
+    paused: false,
     gameOver: false,
     levelSelectUnlocked: loadLevelSelectUnlocked(),
     mode: "campaign",
@@ -67,7 +70,7 @@
     y: WORLD.height - 92,
     targetX: WORLD.width * 0.5,
     targetY: WORLD.height - 92,
-    radius: 23,
+    radius: 20,
     invulnerable: 0,
   };
 
@@ -177,10 +180,10 @@
       accent: "rgba(216, 69, 69, 0.34)",
       bulletColor: COLORS.red,
       radius: 82,
-      hpBonus: 16,
+      hpBonus: 12,
       reward: 330,
-      speed: 1.26,
-      shotInterval: 0.98,
+      speed: 1.14,
+      shotInterval: 1.18,
     },
   ];
 
@@ -189,7 +192,7 @@
     { name: "蓝格本乱流", bossAt: 18, difficulty: 2, bossIndex: 1, targetScore: 860 },
     { name: "订书钉防线", bossAt: 21, difficulty: 2.55, bossIndex: 2, targetScore: 1120 },
     { name: "折纸激光塔", bossAt: 24, difficulty: 3.15, bossIndex: 3, targetScore: 1420 },
-    { name: "期末试卷风暴", bossAt: 27, difficulty: 3.8, bossIndex: 4, targetScore: 1780 },
+    { name: "期末试卷风暴", bossAt: 27, difficulty: 3.35, bossIndex: 4, targetScore: 1680 },
   ];
 
   function clamp(value, min, max) {
@@ -247,6 +250,12 @@
     levelSelectButton.title = state.levelSelectUnlocked ? "选择已解锁关卡" : "完整通关一次关卡模式后开启";
   }
 
+  function updatePauseButton() {
+    pauseButton.disabled = !state.running && !state.paused;
+    pauseButton.textContent = state.paused ? "继续" : "暂停";
+    pauseButton.title = state.paused ? "继续游戏" : "暂停游戏";
+  }
+
   function unlockLevelSelect() {
     if (state.levelSelectUnlocked) return;
     state.levelSelectUnlocked = true;
@@ -254,9 +263,21 @@
     updateLevelSelectButton();
   }
 
+  function handleAdminUnlock() {
+    const password = window.prompt("请输入管理员密码");
+    if (password === null) return;
+    if (password.trim() !== "codex") {
+      showOverlay("Admin", "密码错误", "选关功能仍然锁定");
+      return;
+    }
+    unlockLevelSelect();
+    showOverlay("Admin", "选关已解锁", "现在可以直接进入任意关卡");
+  }
+
   function prepareModeScreen() {
     stopMusic();
     state.running = false;
+    state.paused = false;
     state.gameOver = false;
     state.levelIndex = 0;
     state.levelElapsed = 0;
@@ -292,6 +313,7 @@
     startButton.textContent = "开始";
     updateModeButton();
     updateLevelSelectButton();
+    updatePauseButton();
     updateHud();
     showOverlay(
       isEndless() ? "Endless" : "Campaign",
@@ -390,7 +412,7 @@
 
   function scheduleMusicStep() {
     musicTimer = null;
-    if (muted || !state.running || !audioCtx || !musicGain) return;
+    if (muted || !state.running || state.paused || !audioCtx || !musicGain) return;
 
     const bossMode = state.bossActive;
     const pattern = bossMode ? MUSIC_BOSS : MUSIC_NORMAL;
@@ -410,7 +432,7 @@
   }
 
   function startMusic() {
-    if (muted || !state.running || !audioCtx || !musicGain || musicTimer) return;
+    if (muted || !state.running || state.paused || !audioCtx || !musicGain || musicTimer) return;
     const now = audioCtx.currentTime;
     if (musicGain.gain.cancelScheduledValues) musicGain.gain.cancelScheduledValues(now);
     musicGain.gain.setValueAtTime(Math.max(0.0001, musicGain.gain.value || 0.0001), now);
@@ -483,6 +505,7 @@
   function startEndless() {
     stopMusic();
     state.running = true;
+    state.paused = false;
     state.gameOver = false;
     state.levelIndex = 0;
     state.levelElapsed = 0;
@@ -516,6 +539,7 @@
     trails.length = 0;
     overlay.classList.remove("is-visible");
     startButton.textContent = "重新开始";
+    updatePauseButton();
     addFloatText(WORLD.width * 0.5, 118, "无尽模式", COLORS.red);
     updateHud();
     startMusic();
@@ -525,6 +549,7 @@
     const level = LEVELS[index];
     stopMusic();
     state.running = true;
+    state.paused = false;
     state.gameOver = false;
     state.levelIndex = index;
     state.levelElapsed = 0;
@@ -555,6 +580,7 @@
     trails.length = 0;
     overlay.classList.remove("is-visible");
     startButton.textContent = "重新开始";
+    updatePauseButton();
     addFloatText(WORLD.width * 0.5, 118, `第 ${index + 1} 关`, COLORS.blue);
     updateHud();
     startMusic();
@@ -576,9 +602,11 @@
       timerEl.textContent = "--";
     }
     livesEl.textContent = String(state.lives);
-    stageEl.textContent = state.bossActive
-      ? "Boss"
-      : state.levelComplete
+    stageEl.textContent = state.paused
+      ? "暂停"
+      : state.bossActive
+        ? "Boss"
+        : state.levelComplete
         ? "评分"
         : state.running
           ? isEndless()
@@ -602,6 +630,21 @@
     overlayTitle.textContent = title;
     overlayText.textContent = text;
     overlay.classList.add("is-visible");
+  }
+
+  function togglePause() {
+    if (!state.running && !state.paused) return;
+    state.paused = !state.paused;
+    if (state.paused) {
+      stopMusic();
+      showOverlay("Pause", "游戏暂停", "按继续回到战场");
+    } else {
+      overlay.classList.remove("is-visible");
+      state.lastTime = performance.now();
+      startMusic();
+    }
+    updatePauseButton();
+    updateHud();
   }
 
   function showLevelSelect() {
@@ -640,6 +683,7 @@
 
   function gameOver() {
     state.running = false;
+    state.paused = false;
     state.gameOver = true;
     state.levelComplete = false;
     startButton.textContent = "重新开始";
@@ -647,6 +691,7 @@
     showOverlay("Game Over", "坠落", detail);
     stopMusic();
     sfx.gameOver();
+    updatePauseButton();
     updateHud();
   }
 
@@ -806,11 +851,11 @@
     } else if (variant.kind === "fan") {
       const pattern = boss.shotCount % 5;
       if (pattern === 0) {
-        const count = 12;
+        const count = 11;
         const spin = boss.shotCount * 0.58;
         for (let i = 0; i < count; i += 1) {
           const angle = spin + (Math.PI * 2 * i) / count;
-          const speed = 124 + (i % 3) * 26;
+          const speed = 116 + (i % 3) * 22;
           enemyBullets.push({
             x: boss.x + Math.cos(angle) * 24,
             y: boss.y + Math.sin(angle) * 16,
@@ -826,7 +871,7 @@
         const aim = Math.atan2(player.y - boss.y, player.x - boss.x);
         [-0.56, -0.36, -0.18, 0, 0.18, 0.36, 0.56].forEach((offset, index) => {
           const angle = aim + offset;
-          const speed = 178 + (index % 3) * 20;
+          const speed = 166 + (index % 3) * 18;
           enemyBullets.push({
             x: boss.x,
             y: boss.y + 46,
@@ -839,14 +884,14 @@
           });
         });
       } else if (pattern === 2) {
-        for (let i = 0; i < 6; i += 1) {
+        for (let i = 0; i < 5; i += 1) {
           const y = boss.y + 18 + i * 31;
           const drift = 42 + i * 5;
           enemyBullets.push({
             x: -18,
             y,
-            vx: 138 + drift,
-            vy: 78 + i * 7,
+            vx: 126 + drift,
+            vy: 70 + i * 6,
             radius: 8,
             life: 5.6,
             color: variant.bulletColor,
@@ -855,8 +900,8 @@
           enemyBullets.push({
             x: WORLD.width + 18,
             y,
-            vx: -138 - drift,
-            vy: 78 + i * 7,
+            vx: -126 - drift,
+            vy: 70 + i * 6,
             radius: 8,
             life: 5.6,
             color: variant.bulletColor,
@@ -865,16 +910,16 @@
         }
       } else if (pattern === 3) {
         [-0.56, 0, 0.56].forEach((offset) => {
-          spawnLaser(boss.x, boss.y + 46, Math.PI * 0.5 + offset + Math.sin(boss.phase) * 0.12, 820, 15, variant.bulletColor);
+          spawnLaser(boss.x, boss.y + 46, Math.PI * 0.5 + offset + Math.sin(boss.phase) * 0.12, 820, 13, variant.bulletColor);
         });
       } else {
-        [-250, -180, -110, -40, 40, 110, 180, 250].forEach((offset, index) => {
+        [-230, -160, -90, -20, 70, 150, 230].forEach((offset, index) => {
           const x = clamp(boss.x + offset, 28, WORLD.width - 28);
           enemyBullets.push({
             x,
             y: boss.y + 42,
             vx: -offset * 0.22,
-            vy: 176 + (index % 2) * 24,
+            vy: 162 + (index % 2) * 20,
             radius: 8,
             life: 5.4,
             color: variant.bulletColor,
@@ -887,8 +932,8 @@
           enemyBullets.push({
             x: boss.x,
             y: boss.y + 54,
-            vx: Math.cos(angle) * 220,
-            vy: Math.sin(angle) * 220,
+            vx: Math.cos(angle) * 202,
+            vy: Math.sin(angle) * 202,
             radius: 7,
             life: 4.4,
             color: variant.bulletColor,
@@ -1021,6 +1066,7 @@
     state.ratings[state.levelIndex] = rating;
     const finalLevel = state.levelIndex === LEVELS.length - 1;
     state.running = false;
+    state.paused = false;
     state.levelComplete = true;
     state.campaignComplete = finalLevel;
     if (finalLevel) {
@@ -1042,11 +1088,12 @@
     );
     stopMusic();
     sfx.victory();
+    updatePauseButton();
     updateHud();
   }
 
   function updateGame(dt) {
-    if (!state.running) return;
+    if (!state.running || state.paused) return;
     const level = currentLevel();
     state.levelElapsed += dt;
     if (isEndless()) {
@@ -1720,6 +1767,10 @@
     }
   });
 
+  pauseButton.addEventListener("click", () => {
+    togglePause();
+  });
+
   modeButton.addEventListener("click", () => {
     state.mode = isEndless() ? "campaign" : "endless";
     hideLevelSelect();
@@ -1728,6 +1779,10 @@
 
   levelSelectButton.addEventListener("click", () => {
     showLevelSelect();
+  });
+
+  adminButton.addEventListener("click", () => {
+    handleAdminUnlock();
   });
 
   levelSelectClose.addEventListener("click", () => {
@@ -1783,6 +1838,7 @@
   resizeCanvas();
   updateModeButton();
   updateLevelSelectButton();
+  updatePauseButton();
   updateSoundButton();
   updateHud();
   showOverlay("Paper Flight", "纸飞机大战", "准备起飞");

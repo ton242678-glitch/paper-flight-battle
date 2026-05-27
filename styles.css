@@ -86,6 +86,7 @@ button:disabled {
 }
 
 .topbar {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto minmax(410px, 1fr);
   align-items: center;
@@ -175,8 +176,33 @@ h1 {
 
 .controls {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.admin-button {
+  position: absolute;
+  z-index: 5;
+  top: 24px;
+  left: 68px;
+  width: 26px;
+  min-height: 22px;
+  padding: 0;
+  border-width: 1px;
+  background: rgba(255, 244, 243, 0.72);
+  border-color: rgba(216, 69, 69, 0.5);
+  color: rgba(24, 32, 46, 0.58);
+  font-size: 0.68rem;
+  box-shadow: 2px 2px 0 rgba(24, 32, 46, 0.08);
+  opacity: 0.42;
+}
+
+.admin-button:hover,
+.admin-button:focus-visible {
+  opacity: 1;
+  color: var(--ink);
+  background: #fff4f3;
 }
 
 .arena {
@@ -422,7 +448,7 @@ h1 {
 
   .controls {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -430,6 +456,11 @@ h1 {
     width: 100%;
     min-height: 38px;
     padding: 0 8px;
+  }
+
+  .admin-button {
+    top: 18px;
+    left: 54px;
   }
 
   .arena {
